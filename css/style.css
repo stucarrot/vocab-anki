@@ -228,6 +228,10 @@ body{
   word-break:break-word;
 }
 
+.sentence-text.lang-en{
+  font-family:"Lexend","Noto Sans",sans-serif;
+}
+
 .sentence-text.lang-ru{
   font-family:"Noto Serif","Noto Sans",serif;
 }
