@@ -287,6 +287,13 @@ body{
   box-shadow:0 0 0 1.5px var(--sel-border) inset;
   font-weight:700;
 }
+.token.punct{
+  cursor:default;
+  padding:2px 0;
+  color:var(--text);
+}
+.token.punct:hover{ background:none; }
+
 .token.space{
   cursor:default;
   padding:0;

@@ -160,17 +160,42 @@ const Parser = (() => {
   }
 
   // ---------- 토큰화 ----------
-  // 원문의 공백을 보존한 채 단어/공백 토큰으로 분리.
-  // clean: 번역에 사용할, 앞뒤 구두점을 제거한 실제 단어.
+  // 원문의 공백을 보존한 채 공백/단어/구두점 토큰으로 분리.
+  // 단어 앞뒤에 붙은 구두점(따옴표, 쉼표, 마침표 등)은 별도 토큰으로 떼어내
+  // 화면에서 선택(하이라이트) 대상이 되지 않도록 한다.
+  // 내부 구두점(don't, well-known 등)은 단어의 일부로 유지된다.
+  function splitWordPunct(part) {
+    const leadMatch = part.match(/^[^\p{L}\p{N}]+/u);
+    const lead = leadMatch ? leadMatch[0] : '';
+    const rest = part.slice(lead.length);
+    if (!rest) return { lead: part, core: '', trail: '' }; // 전부 구두점/기호인 토큰
+    const trailMatch = rest.match(/[^\p{L}\p{N}]+$/u);
+    const trail = trailMatch ? trailMatch[0] : '';
+    const core = trail ? rest.slice(0, rest.length - trail.length) : rest;
+    return { lead, core, trail };
+  }
+
   function tokenize(sentence) {
     const raw = sentence.match(/\S+|\s+/g) || [];
-    return raw.map((t, i) => {
-      const isSpace = /^\s+$/.test(t);
-      const clean = isSpace
-        ? ''
-        : t.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
-      return { i, text: t, isSpace, clean };
-    });
+    const tokens = [];
+    let i = 0;
+
+    for (const part of raw) {
+      if (/^\s+$/.test(part)) {
+        tokens.push({ i: i++, text: part, isSpace: true, isPunct: false, clean: '' });
+        continue;
+      }
+      const { lead, core, trail } = splitWordPunct(part);
+      if (!core) {
+        // 이모지, 대시, 따옴표 단독 등 - 전부 구두점으로 취급
+        tokens.push({ i: i++, text: part, isSpace: false, isPunct: true, clean: '' });
+        continue;
+      }
+      if (lead) tokens.push({ i: i++, text: lead, isSpace: false, isPunct: true, clean: '' });
+      tokens.push({ i: i++, text: core, isSpace: false, isPunct: false, clean: core });
+      if (trail) tokens.push({ i: i++, text: trail, isSpace: false, isPunct: true, clean: '' });
+    }
+    return tokens;
   }
 
   return { extractSentences, tokenize, looksLikeSRT };

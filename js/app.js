@@ -55,6 +55,8 @@
     span.textContent = tok.text;
     if (tok.isSpace) {
       span.className = 'token space';
+    } else if (tok.isPunct) {
+      span.className = 'token punct';
     } else {
       span.className = 'token' + (tok.selected ? ' selected' : '');
       span.tabIndex = 0;
@@ -200,7 +202,7 @@
   function toggleToken(sIdx, tokIdx) {
     const s = sentences[sIdx];
     const tok = s.tokens.find(t => t.i === tokIdx);
-    if (!tok || tok.isSpace) return;
+    if (!tok || tok.isSpace || tok.isPunct) return;
     tok.selected = !tok.selected;
     refreshItem(sIdx);
     updateSelectionSummary();
@@ -347,7 +349,7 @@
       ttsEnabled: els.ttsToggle.checked,
       sentences: sentences.map(s => ({
         id: s.id, text: s.text, lang: s.lang,
-        tokens: s.tokens.map(t => ({ i: t.i, text: t.text, isSpace: t.isSpace, clean: t.clean, selected: t.selected })),
+        tokens: s.tokens.map(t => ({ i: t.i, text: t.text, isSpace: t.isSpace, isPunct: t.isPunct, clean: t.clean, selected: t.selected })),
       })),
     };
   }
@@ -454,7 +456,7 @@
       const s = targets[i];
       const selectedTokens = s.tokens.filter(t => t.selected).sort((a, b) => a.i - b.i);
       const word = selectedTokens.map(t => t.clean).filter(Boolean).join(' ');
-      const totalWordTokens = s.tokens.filter(t => !t.isSpace).length;
+      const totalWordTokens = s.tokens.filter(t => !t.isSpace && !t.isPunct).length;
       const includeExample = totalWordTokens > selectedTokens.length;
 
       setStatus(`(${i + 1}/${targets.length}) "${word}" 처리 중…`);

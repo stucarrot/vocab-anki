@@ -91,22 +91,142 @@ const Translate = (() => {
     return plain;
   }
 
-  // 단어의 "여러 품사별 뜻"
+  // ---------- 영어 동사 원형 추정 ----------
+  // 불규칙 동사표(흔한 것 위주) + 규칙 동사 어미(-ed/-ing/-s) 후보 생성 후,
+  // 실제 사전(dictionaryLookup)에 "동사" 품사가 있는지 검증해서 확정한다.
+  // 즉, 추측만으로 끝나지 않고 Google 사전으로 한 번 더 확인하는 방식.
+  const IRREGULAR_EN_VERBS = {
+    was: 'be', were: 'be', been: 'be', being: 'be', is: 'be', am: 'be', are: 'be',
+    went: 'go', gone: 'go', going: 'go',
+    had: 'have', has: 'have', having: 'have',
+    did: 'do', done: 'do', does: 'do', doing: 'do',
+    said: 'say', saying: 'say', says: 'say',
+    made: 'make', making: 'make',
+    took: 'take', taken: 'take', taking: 'take',
+    came: 'come', coming: 'come',
+    saw: 'see', seen: 'see', seeing: 'see',
+    knew: 'know', known: 'know', knowing: 'know',
+    got: 'get', gotten: 'get', getting: 'get',
+    gave: 'give', given: 'give', giving: 'give',
+    found: 'find', finding: 'find',
+    thought: 'think', thinking: 'think',
+    told: 'tell', telling: 'tell',
+    became: 'become', becoming: 'become',
+    showed: 'show', shown: 'show', showing: 'show',
+    left: 'leave', leaving: 'leave',
+    felt: 'feel', feeling: 'feel',
+    brought: 'bring', bringing: 'bring',
+    began: 'begin', begun: 'begin', beginning: 'begin',
+    kept: 'keep', keeping: 'keep',
+    held: 'hold', holding: 'hold',
+    wrote: 'write', written: 'write', writing: 'write',
+    stood: 'stand', standing: 'stand',
+    heard: 'hear', hearing: 'hear',
+    let: 'let', letting: 'let',
+    meant: 'mean', meaning: 'mean',
+    met: 'meet', meeting: 'meet',
+    ran: 'run', running: 'run',
+    paid: 'pay', paying: 'pay',
+    sat: 'sit', sitting: 'sit',
+    spoke: 'speak', spoken: 'speak', speaking: 'speak',
+    lay: 'lie', lain: 'lie', lying: 'lie',
+    led: 'lead', leading: 'lead',
+    grew: 'grow', grown: 'grow', growing: 'grow',
+    lost: 'lose', losing: 'lose',
+    fell: 'fall', fallen: 'fall', falling: 'fall',
+    sent: 'send', sending: 'send',
+    built: 'build', building: 'build',
+    understood: 'understand', understanding: 'understand',
+    drew: 'draw', drawn: 'draw', drawing: 'draw',
+    broke: 'break', broken: 'break', breaking: 'break',
+    spent: 'spend', spending: 'spend',
+    rose: 'rise', risen: 'rise', rising: 'rise',
+    drove: 'drive', driven: 'drive', driving: 'drive',
+    bought: 'buy', buying: 'buy',
+    wore: 'wear', worn: 'wear', wearing: 'wear',
+    chose: 'choose', chosen: 'choose', choosing: 'choose',
+    threw: 'throw', thrown: 'throw', throwing: 'throw',
+    flew: 'fly', flown: 'fly', flying: 'fly',
+    forgot: 'forget', forgotten: 'forget', forgetting: 'forget',
+    caught: 'catch', catching: 'catch',
+    taught: 'teach', teaching: 'teach',
+    fought: 'fight', fighting: 'fight',
+    slept: 'sleep', sleeping: 'sleep',
+    dealt: 'deal', dealing: 'deal',
+  };
+
+  function dedoubleConsonant(stem) {
+    return /([bcdfgklmnprtvz])\1$/.test(stem) ? stem.slice(0, -1) : stem;
+  }
+
+  // 원형일 가능성이 있는 후보들을 생성한다(중복 제거, 원래 단어 자신은 제외).
+  function candidateBaseForms(word) {
+    const w = word.toLowerCase();
+    const candidates = new Set();
+
+    if (IRREGULAR_EN_VERBS[w]) candidates.add(IRREGULAR_EN_VERBS[w]);
+
+    if (w.endsWith('ied') && w.length > 4) candidates.add(w.slice(0, -3) + 'y');
+    if (w.endsWith('ies') && w.length > 4) candidates.add(w.slice(0, -3) + 'y');
+
+    if (w.endsWith('ed') && w.length > 3) {
+      const stem = dedoubleConsonant(w.slice(0, -2));
+      candidates.add(stem);
+      candidates.add(stem + 'e');
+    }
+    if (w.endsWith('ing') && w.length > 4) {
+      const stem = dedoubleConsonant(w.slice(0, -3));
+      candidates.add(stem);
+      candidates.add(stem + 'e');
+    }
+    if (/(?:s|x|z|ch|sh)es$/.test(w)) candidates.add(w.slice(0, -2));
+    if (w.endsWith('s') && !w.endsWith('ss') && w.length > 3) candidates.add(w.slice(0, -1));
+
+    candidates.delete(w);
+    return [...candidates];
+  }
+
+  // 후보들을 실제 사전(dictionaryLookup)으로 검증해 "동사"로 확인되는 첫 후보를 반환.
+  // 영어가 아니거나 후보가 없으면 null.
+  async function findVerifiedBaseForm(word, sourceLang, targetLang) {
+    if (sourceLang !== 'en') return null;
+    const candidates = candidateBaseForms(word);
+    for (const cand of candidates) {
+      const dict = await dictionaryLookup(cand, sourceLang, targetLang);
+      if (dict && /동사/.test(dict)) return cand;
+    }
+    return null;
+  }
+
+  // 단어의 "여러 품사별 뜻" (+ 영어 동사면 원형도 함께 표기)
   // 1) 사전 엔드포인트(무료/비공식) 우선 시도 - 키 유무와 무관하게 항상 먼저 시도
   // 2) 실패 시: 키가 있으면 공식 API, 없으면 비공식 일반 번역으로 대체
+  // 3) 단일 단어(구가 아님)이고 영어라면, 어미 변화형인지 확인해 원형을 함께 표기
   async function lookupWordMeaning(word, sourceLang, targetLang, apiKey) {
     const dict = await dictionaryLookup(word, sourceLang, targetLang);
-    if (dict) return dict;
-    if (apiKey) {
+    let meaning = dict || '';
+
+    if (!meaning) {
+      if (apiKey) {
+        try {
+          meaning = await officialTranslate(word, sourceLang, targetLang, apiKey);
+        } catch (e) { /* 아래 비공식 폴백으로 계속 */ }
+      }
+      if (!meaning) {
+        try {
+          meaning = await unofficialTranslateText(word, sourceLang, targetLang);
+        } catch (e) { meaning = ''; }
+      }
+    }
+
+    if (sourceLang === 'en' && !/\s/.test(word.trim())) {
       try {
-        return await officialTranslate(word, sourceLang, targetLang, apiKey);
-      } catch (e) { /* 아래 비공식 폴백으로 계속 */ }
+        const base = await findVerifiedBaseForm(word, sourceLang, targetLang);
+        if (base) meaning = (meaning ? meaning + '\n' : '') + `원형: ${base}`;
+      } catch (e) { /* 원형 추정 실패는 조용히 무시 */ }
     }
-    try {
-      return await unofficialTranslateText(word, sourceLang, targetLang);
-    } catch (e) {
-      return '';
-    }
+
+    return meaning;
   }
 
   // ---------- 문장 번역 ----------
