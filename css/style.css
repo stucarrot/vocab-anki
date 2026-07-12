@@ -264,6 +264,7 @@ body{
 
 .sentence-text.lang-en{
   font-family:"Lexend","Noto Sans",sans-serif;
+  font-weight:600;
 }
 
 .sentence-text.lang-ru{
