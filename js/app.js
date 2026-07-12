@@ -18,8 +18,6 @@
     mainArea: document.getElementById('mainArea'),
     emptyState: document.getElementById('emptyState'),
     sentenceList: document.getElementById('sentenceList'),
-    scrollTrack: document.getElementById('scrollTrack'),
-    scrollThumb: document.getElementById('scrollThumb'),
     scrollPos: document.getElementById('scrollPos'),
     bottomBar: document.getElementById('bottomBar'),
     loadbar: document.getElementById('loadbar'),
@@ -182,19 +180,16 @@
     if (!sentences.length) {
       els.emptyState.hidden = false;
       els.sentenceList.hidden = true;
-      els.scrollTrack.hidden = true;
       updateSelectionSummary();
       return;
     }
     els.emptyState.hidden = true;
     els.sentenceList.hidden = false;
-    els.scrollTrack.hidden = false;
 
     const frag = document.createDocumentFragment();
     sentences.forEach((s, sIdx) => frag.appendChild(buildSentenceItemEl(s, sIdx)));
     els.sentenceList.appendChild(frag);
     updateSelectionSummary();
-    syncScrollThumb();
   }
 
   function updateSentenceSelClass(li, s) {
@@ -327,7 +322,6 @@
     els.statusLineCollapsed.hidden = !collapsed;
     try { localStorage.setItem(LOADBAR_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch (e) {}
     measureBarHeights();
-    syncScrollThumb();
   }
 
   els.loadbarToggle.addEventListener('click', () => {
@@ -397,29 +391,12 @@
 
   els.saveProgressBtn.addEventListener('click', () => saveState(true));
 
-  // ---------- 커스텀 스크롤바 ----------
+  // ---------- 스크롤 위치 알림 (드래그용 스크롤바는 없음) ----------
   function measureBarHeights() {
     document.documentElement.style.setProperty('--loadbar-h', els.loadbar.offsetHeight + 'px');
     document.documentElement.style.setProperty('--bottombar-h', els.bottomBar.offsetHeight + 'px');
   }
   window.addEventListener('resize', measureBarHeights);
-
-  let hideThumbTimer = null;
-  function syncScrollThumb() {
-    const { scrollTop, scrollHeight, clientHeight } = els.mainArea;
-    if (scrollHeight <= clientHeight) {
-      els.scrollThumb.style.height = '100%';
-      els.scrollThumb.style.top = '0px';
-      return;
-    }
-    const trackH = els.scrollTrack.clientHeight;
-    const thumbH = Math.max(36, (clientHeight / scrollHeight) * trackH);
-    const maxThumbTop = trackH - thumbH;
-    const scrollRatio = scrollTop / (scrollHeight - clientHeight);
-    const thumbTop = scrollRatio * maxThumbTop;
-    els.scrollThumb.style.height = thumbH + 'px';
-    els.scrollThumb.style.top = thumbTop + 'px';
-  }
 
   function currentVisibleIndex() {
     const items = els.sentenceList.children;
@@ -431,60 +408,26 @@
     return items.length - 1;
   }
 
+  let hideScrollPosTimer = null;
   function flashScrollPos() {
+    if (!sentences.length) return;
     const idx = currentVisibleIndex();
-    if (idx < 0 || !sentences.length) return;
+    if (idx < 0) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = els.mainArea;
+    const ratio = scrollHeight > clientHeight ? scrollTop / (scrollHeight - clientHeight) : 0;
+    const rect = els.mainArea.getBoundingClientRect();
+    const y = rect.top + ratio * rect.height;
+
+    els.scrollPos.hidden = false;
     els.scrollPos.textContent = `${idx + 1} / ${sentences.length}`;
-    const thumbTop = parseFloat(els.scrollThumb.style.top || '0');
-    const thumbH = parseFloat(els.scrollThumb.style.height || '0');
-    els.scrollPos.style.top = (thumbTop + thumbH / 2) + 'px';
+    els.scrollPos.style.top = y + 'px';
     els.scrollPos.classList.add('visible');
-    clearTimeout(hideThumbTimer);
-    hideThumbTimer = setTimeout(() => els.scrollPos.classList.remove('visible'), 900);
+    clearTimeout(hideScrollPosTimer);
+    hideScrollPosTimer = setTimeout(() => els.scrollPos.classList.remove('visible'), 900);
   }
 
-  els.mainArea.addEventListener('scroll', () => {
-    syncScrollThumb();
-    flashScrollPos();
-  }, { passive: true });
-
-  // 스크롤바 드래그
-  let dragging = false;
-  els.scrollThumb.addEventListener('pointerdown', e => {
-    dragging = true;
-    els.scrollThumb.setPointerCapture(e.pointerId);
-    els.scrollPos.classList.add('visible');
-  });
-  els.scrollThumb.addEventListener('pointermove', e => {
-    if (!dragging) return;
-    const trackRect = els.scrollTrack.getBoundingClientRect();
-    const thumbH = els.scrollThumb.offsetHeight;
-    let y = e.clientY - trackRect.top - thumbH / 2;
-    y = Math.max(0, Math.min(trackRect.height - thumbH, y));
-    const ratio = y / (trackRect.height - thumbH);
-    const { scrollHeight, clientHeight } = els.mainArea;
-    els.mainArea.scrollTop = ratio * (scrollHeight - clientHeight);
-  });
-  function stopDrag(e) {
-    if (!dragging) return;
-    dragging = false;
-    clearTimeout(hideThumbTimer);
-    hideThumbTimer = setTimeout(() => els.scrollPos.classList.remove('visible'), 500);
-  }
-  els.scrollThumb.addEventListener('pointerup', stopDrag);
-  els.scrollThumb.addEventListener('pointercancel', stopDrag);
-
-  // 트랙 클릭(썸 바깥) -> 그 위치로 점프
-  els.scrollTrack.addEventListener('pointerdown', e => {
-    if (e.target === els.scrollThumb) return;
-    const trackRect = els.scrollTrack.getBoundingClientRect();
-    const thumbH = els.scrollThumb.offsetHeight;
-    let y = e.clientY - trackRect.top - thumbH / 2;
-    y = Math.max(0, Math.min(trackRect.height - thumbH, y));
-    const ratio = y / (trackRect.height - thumbH);
-    const { scrollHeight, clientHeight } = els.mainArea;
-    els.mainArea.scrollTop = ratio * (scrollHeight - clientHeight);
-  });
+  els.mainArea.addEventListener('scroll', flashScrollPos, { passive: true });
 
   // ---------- Anki 내보내기 ----------
 

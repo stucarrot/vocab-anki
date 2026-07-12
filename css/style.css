@@ -12,7 +12,7 @@
   --sel-border:#268bd2;
   --danger:    #dc322f;
   --radius:    10px;
-  --track-w:   26px;
+  --track-w:   14px; /* 커스텀 스크롤바는 제거했지만, 네이티브 스크롤바/위치 뱃지를 위한 여백으로 재사용 */
 }
 
 *{ box-sizing:border-box; }
@@ -332,32 +332,10 @@ body{
   resize:vertical;
 }
 
-/* ---------- 커스텀 스크롤바 ---------- */
-.scroll-track{
-  position:fixed;
-  top:0; right:0;
-  width:var(--track-w);
-  bottom: var(--bottombar-h, 56px);
-  margin-top:var(--loadbar-h, 0px);
-  background:transparent;
-  z-index:5;
-}
-.scroll-thumb{
-  position:absolute;
-  right:4px;
-  width:calc(var(--track-w) - 8px);
-  min-height:36px;
-  border-radius:99px;
-  background:var(--accent);
-  opacity:.55;
-  cursor:grab;
-  touch-action:none;
-}
-.scroll-thumb:active{ cursor:grabbing; opacity:.85; }
-
+/* ---------- 스크롤 위치 표시 (드래그용 스크롤바는 제거, 알림만 유지) ---------- */
 .scroll-pos{
-  position:absolute;
-  right:calc(var(--track-w) + 4px);
+  position:fixed;
+  right:10px;
   transform:translateY(-50%);
   background:var(--text);
   color:var(--bg);
@@ -369,8 +347,10 @@ body{
   opacity:0;
   transition:opacity .15s ease;
   pointer-events:none;
+  z-index:5;
 }
 .scroll-pos.visible{ opacity:1; }
+.scroll-pos[hidden]{ display:none; }
 
 /* ---------- 하단바 ---------- */
 #bottomBar{
@@ -398,7 +378,7 @@ body{
 
 /* ---------- 모바일 대응 ---------- */
 @media (max-width: 600px){
-  :root{ --track-w:20px; }
+  :root{ --track-w:10px; }
   .loadbar-row{ gap:6px; }
   .file-btn, .ghost-btn, .solid-btn{ padding:8px 10px; font-size:12.5px; }
   #mainArea{ padding-left:8px; padding-right:calc(var(--track-w) + 8px); }
