@@ -44,6 +44,28 @@ body{
   padding-right:calc(var(--track-w) + 10px);
 }
 
+.loadbar-toggle-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.status-line-collapsed{
+  font-size:12px;
+  color:var(--muted);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  flex:1 1 auto;
+}
+
+#loadbarBody{
+  margin-top:8px;
+}
+#loadbarBody.collapsed{
+  display:none;
+}
+
 .loadbar-row{
   display:flex;
   align-items:center;
@@ -198,7 +220,7 @@ body{
   list-style:none;
   margin:0;
   padding:0;
-  max-width:820px;
+  max-width:920px;
   margin:0 auto;
 }
 
@@ -206,26 +228,38 @@ body{
   background:var(--bg-card);
   border:1px solid var(--border);
   border-radius:var(--radius);
-  padding:12px 14px;
-  margin-bottom:10px;
+  padding:10px 12px;
+  margin-bottom:8px;
 }
 
 .sentence-item.has-selection{
   border-color:var(--accent-2);
 }
 
+.sentence-row{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+}
+
 .sentence-index{
+  flex:0 0 auto;
+  min-width:1.6em;
+  text-align:right;
   font-size:11px;
   color:var(--muted);
-  margin-bottom:6px;
   font-variant-numeric:tabular-nums;
+  padding-top:0.3em;
+  user-select:none;
 }
 
 .sentence-text{
+  flex:1 1 auto;
   font-family:"Noto Serif","Noto Sans",serif;
   font-size:17px;
   line-height:2;
   word-break:break-word;
+  min-width:0;
 }
 
 .sentence-text.lang-en{
@@ -261,8 +295,20 @@ body{
 .item-actions{
   display:flex;
   justify-content:flex-end;
-  gap:6px;
-  margin-top:8px;
+  gap:4px;
+  margin-top:4px;
+}
+
+.item-icon-btn{
+  width:26px;
+  height:26px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:13px;
+  line-height:1;
+  border-radius:6px;
 }
 
 .small-btn{
@@ -351,10 +397,17 @@ body{
 
 /* ---------- 모바일 대응 ---------- */
 @media (max-width: 600px){
-  :root{ --track-w:22px; }
+  :root{ --track-w:20px; }
   .loadbar-row{ gap:6px; }
   .file-btn, .ghost-btn, .solid-btn{ padding:8px 10px; font-size:12.5px; }
-  .sentence-text{ font-size:16px; line-height:2.1; }
+  #mainArea{ padding-left:8px; padding-right:calc(var(--track-w) + 8px); }
+  .sentence-item{ padding:8px 9px; margin-bottom:6px; }
+  .sentence-row{ gap:6px; }
+  .sentence-index{ font-size:10px; min-width:1.4em; }
+  .sentence-text{ font-size:15.5px; line-height:1.55; }
+  .token{ min-height:24px; padding:1px 2px; }
+  .item-actions{ margin-top:2px; gap:3px; }
+  .item-icon-btn{ width:24px; height:24px; font-size:12px; }
   #bottomBar{ padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
   .bottom-actions{ flex:1; }
   #exportBtn{ flex:1; }

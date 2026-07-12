@@ -23,6 +23,10 @@
     scrollPos: document.getElementById('scrollPos'),
     bottomBar: document.getElementById('bottomBar'),
     loadbar: document.getElementById('loadbar'),
+    loadbarToggle: document.getElementById('loadbarToggle'),
+    loadbarToggleIcon: document.getElementById('loadbarToggleIcon'),
+    loadbarBody: document.getElementById('loadbarBody'),
+    statusLineCollapsed: document.getElementById('statusLineCollapsed'),
     selectionSummary: document.getElementById('selectionSummary'),
     saveProgressBtn: document.getElementById('saveProgressBtn'),
     exportBtn: document.getElementById('exportBtn'),
@@ -38,6 +42,8 @@
   function setStatus(msg, isError) {
     els.statusLine.textContent = msg || '';
     els.statusLine.style.color = isError ? 'var(--danger)' : '';
+    els.statusLineCollapsed.textContent = msg || '';
+    els.statusLineCollapsed.style.color = isError ? 'var(--danger)' : '';
   }
 
   // ---------- 언어별 폰트 클래스 ----------
@@ -71,12 +77,12 @@
     li.className = 'sentence-item';
     li.dataset.sIdx = String(sIdx);
 
-    const idxEl = document.createElement('div');
-    idxEl.className = 'sentence-index';
-    idxEl.textContent = `${sIdx + 1} / ${sentences.length}`;
-    li.appendChild(idxEl);
-
     if (s.editing) {
+      const idxEl = document.createElement('div');
+      idxEl.className = 'sentence-index';
+      idxEl.textContent = `${sIdx + 1} / ${sentences.length}`;
+      li.appendChild(idxEl);
+
       const ta = document.createElement('textarea');
       ta.className = 'edit-textarea';
       ta.value = s.text;
@@ -113,18 +119,29 @@
       });
       requestAnimationFrame(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); });
     } else {
+      const row = document.createElement('div');
+      row.className = 'sentence-row';
+
+      const idxEl = document.createElement('span');
+      idxEl.className = 'sentence-index';
+      idxEl.textContent = `${sIdx + 1}`;
+      idxEl.title = `${sIdx + 1} / ${sentences.length}`;
+      row.appendChild(idxEl);
+
       const textEl = document.createElement('div');
       textEl.className = `sentence-text ${langClass(s.lang)}`;
       s.tokens.forEach(tok => textEl.appendChild(buildTokenSpan(tok, sIdx)));
-      li.appendChild(textEl);
+      row.appendChild(textEl);
 
       const actions = document.createElement('div');
       actions.className = 'item-actions';
 
       const editBtn = document.createElement('button');
       editBtn.type = 'button';
-      editBtn.className = 'ghost-btn small-btn';
-      editBtn.textContent = '✏ 수정';
+      editBtn.className = 'ghost-btn item-icon-btn';
+      editBtn.textContent = '✏';
+      editBtn.title = '수정';
+      editBtn.setAttribute('aria-label', '수정');
       editBtn.addEventListener('click', () => {
         s.editing = true;
         refreshItem(sIdx);
@@ -132,12 +149,16 @@
 
       const dupBtn = document.createElement('button');
       dupBtn.type = 'button';
-      dupBtn.className = 'ghost-btn small-btn';
-      dupBtn.textContent = '⧉ 복제';
+      dupBtn.className = 'ghost-btn item-icon-btn';
+      dupBtn.textContent = '⧉';
+      dupBtn.title = '복제';
+      dupBtn.setAttribute('aria-label', '복제');
       dupBtn.addEventListener('click', () => duplicateSentence(sIdx));
 
       actions.appendChild(editBtn);
       actions.appendChild(dupBtn);
+
+      li.appendChild(row);
       li.appendChild(actions);
     }
 
@@ -295,6 +316,33 @@
     els.apiKeyInput.value = '';
     setStatus('API 키를 삭제했습니다.');
   });
+
+  // ---------- 로드바 접기/펼치기 ----------
+  const LOADBAR_COLLAPSED_KEY = 'vocab-anki:loadbar-collapsed';
+
+  function setLoadbarCollapsed(collapsed) {
+    els.loadbarBody.classList.toggle('collapsed', collapsed);
+    els.loadbarToggle.setAttribute('aria-expanded', String(!collapsed));
+    els.loadbarToggleIcon.textContent = collapsed ? '▸' : '▾';
+    els.statusLineCollapsed.hidden = !collapsed;
+    try { localStorage.setItem(LOADBAR_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch (e) {}
+    measureBarHeights();
+    syncScrollThumb();
+  }
+
+  els.loadbarToggle.addEventListener('click', () => {
+    const collapsed = !els.loadbarBody.classList.contains('collapsed');
+    setLoadbarCollapsed(collapsed);
+  });
+
+  // 처음엔 상태줄을 접힌 경우에만 보이게(펼쳐져 있을 땐 본문에 이미 표시되므로 중복 방지)
+  els.statusLineCollapsed.hidden = true;
+
+  {
+    let initialCollapsed = false;
+    try { initialCollapsed = localStorage.getItem(LOADBAR_COLLAPSED_KEY) === '1'; } catch (e) {}
+    setLoadbarCollapsed(initialCollapsed);
+  }
 
   // ---------- 저장 / 복원 ----------
   function serializeState() {

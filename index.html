@@ -13,57 +13,66 @@
 
 <div id="app">
 
-  <!-- 상단: 작은 불러오기 바 -->
+  <!-- 상단: 작은 불러오기 바 (접기 가능) -->
   <header id="loadbar">
-    <div class="loadbar-row">
-      <label class="file-btn">
-        파일 불러오기
-        <input type="file" id="fileInput" accept=".txt,.srt,.md,text/plain">
-      </label>
-      <button id="pasteToggle" class="ghost-btn" type="button">텍스트 붙여넣기</button>
-
-      <select id="langMode" title="추출할 언어">
-        <option value="en">English</option>
-        <option value="ru">Русский</option>
-      </select>
-
-      <label class="checkbox-label">
-        <input type="checkbox" id="ttsToggle" checked>
-        음성(TTS) 포함
-      </label>
-
-      <button id="settingsToggle" class="ghost-btn icon-btn" type="button" title="API 키 설정" aria-label="설정">⚙</button>
+    <div class="loadbar-toggle-row">
+      <button id="loadbarToggle" class="ghost-btn small-btn" type="button" aria-expanded="true">
+        <span id="loadbarToggleIcon">▾</span> 불러오기 · 설정
+      </button>
+      <span id="statusLineCollapsed" class="status-line-collapsed" aria-live="polite"></span>
     </div>
 
-    <div id="pastePanel" class="panel hidden">
-      <textarea id="pasteArea" placeholder="독서 노트, srt, 텍스트를 붙여넣으세요…"></textarea>
-      <div class="panel-actions">
-        <button id="pasteSubmit" class="solid-btn" type="button">이 텍스트 사용</button>
-        <button id="pasteCancel" class="ghost-btn" type="button">취소</button>
+    <div id="loadbarBody">
+      <div class="loadbar-row">
+        <label class="file-btn">
+          파일 불러오기
+          <input type="file" id="fileInput" accept=".txt,.srt,.md,text/plain">
+        </label>
+        <button id="pasteToggle" class="ghost-btn" type="button">텍스트 붙여넣기</button>
+
+        <select id="langMode" title="추출할 언어">
+          <option value="en">English</option>
+          <option value="ru">Русский</option>
+        </select>
+
+        <label class="checkbox-label">
+          <input type="checkbox" id="ttsToggle" checked>
+          음성(TTS) 포함
+        </label>
+
+        <button id="settingsToggle" class="ghost-btn icon-btn" type="button" title="API 키 설정" aria-label="설정">⚙</button>
       </div>
-    </div>
 
-    <div id="settingsPanel" class="panel hidden">
-      <label class="field-label">
-        Google Cloud API 키
-        <input type="password" id="apiKeyInput" placeholder="AIza...">
-      </label>
-      <p class="hint">
-        이 키는 <strong>이 브라우저에만</strong> 저장되고 저장소(깃허브)로는 전송·저장되지 않습니다.
-        Google Cloud 콘솔에서 <em>Cloud Translation API</em>와 <em>Cloud Text-to-Speech API</em>를 사용 설정한 뒤
-        발급받은 키를 붙여넣으세요. 도메인 제한(HTTP 리퍼러)을 자신의 github.io 주소로 걸어두면 더 안전합니다.
-        <br><br>
-        <strong>키를 비워두면</strong> Google 번역 웹사이트가 쓰는 비공식 경로로 번역·뜻풀이·음성까지 전부
-        처리합니다. 무료이고 설정도 필요 없지만 예고 없이 막히거나 실패할 수 있고, 특히 음성(TTS)은
-        브라우저 정책상 아예 안 나올 수도 있습니다 — 그 경우 해당 카드만 음성 없이 만들어집니다.
-      </p>
-      <div class="panel-actions">
-        <button id="apiKeySave" class="solid-btn" type="button">저장</button>
-        <button id="apiKeyClear" class="ghost-btn" type="button">삭제</button>
+      <div id="pastePanel" class="panel hidden">
+        <textarea id="pasteArea" placeholder="독서 노트, srt, 텍스트를 붙여넣으세요…"></textarea>
+        <div class="panel-actions">
+          <button id="pasteSubmit" class="solid-btn" type="button">이 텍스트 사용</button>
+          <button id="pasteCancel" class="ghost-btn" type="button">취소</button>
+        </div>
       </div>
-    </div>
 
-    <div id="statusLine" class="status-line" aria-live="polite"></div>
+      <div id="settingsPanel" class="panel hidden">
+        <label class="field-label">
+          Google Cloud API 키
+          <input type="password" id="apiKeyInput" placeholder="AIza...">
+        </label>
+        <p class="hint">
+          이 키는 <strong>이 브라우저에만</strong> 저장되고 저장소(깃허브)로는 전송·저장되지 않습니다.
+          Google Cloud 콘솔에서 <em>Cloud Translation API</em>와 <em>Cloud Text-to-Speech API</em>를 사용 설정한 뒤
+          발급받은 키를 붙여넣으세요. 도메인 제한(HTTP 리퍼러)을 자신의 github.io 주소로 걸어두면 더 안전합니다.
+          <br><br>
+          <strong>키를 비워두면</strong> Google 번역 웹사이트가 쓰는 비공식 경로로 번역·뜻풀이·음성까지 전부
+          처리합니다. 무료이고 설정도 필요 없지만 예고 없이 막히거나 실패할 수 있고, 특히 음성(TTS)은
+          브라우저 정책상 아예 안 나올 수도 있습니다 — 그 경우 해당 카드만 음성 없이 만들어집니다.
+        </p>
+        <div class="panel-actions">
+          <button id="apiKeySave" class="solid-btn" type="button">저장</button>
+          <button id="apiKeyClear" class="ghost-btn" type="button">삭제</button>
+        </div>
+      </div>
+
+      <div id="statusLine" class="status-line" aria-live="polite"></div>
+    </div>
   </header>
 
   <!-- 본문: 문장 목록 + 토큰 선택 -->
